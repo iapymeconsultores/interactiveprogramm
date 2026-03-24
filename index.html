@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IApyme × Make Your Way — Build Your Program</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0a0f;--bg2:#12121a;--surface:rgba(255,255,255,0.02);--border:rgba(255,255,255,0.06);--text:#e8e4e0;--text2:#999;--text3:#666;--text4:#555;--cyan:#00e5ff;--rose:#ff6b9d;--gold:#ffd54f;--font:'DM Sans',sans-serif;--mono:'Space Mono',monospace}
+html{background:var(--bg)}
+body{font-family:var(--font);color:var(--text);background:linear-gradient(160deg,#0a0a0f,#12121a 40%,#1a1520);min-height:100vh;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font-family:var(--font);cursor:pointer}
+input{font-family:var(--font)}
+
+/* Ambient */
+.blob{position:fixed;border-radius:50%;pointer-events:none;filter:blur(80px);z-index:0}
+.blob-1{top:-20%;right:-10%;width:600px;height:600px;background:radial-gradient(circle,rgba(255,107,157,.08),transparent 70%)}
+.blob-2{bottom:-20%;left:-10%;width:500px;height:500px;background:radial-gradient(circle,rgba(0,229,255,.06),transparent 70%)}
+
+/* Layout */
+#app{position:relative;z-index:1}
+.topbar{position:sticky;top:0;z-index:100;backdrop-filter:blur(20px);background:rgba(10,10,15,.8);border-bottom:1px solid var(--border);padding:12px 24px;display:none}
+.topbar.show{display:block}
+.topbar-inner{max-width:900px;margin:0 auto;display:flex;align-items:center;gap:16}
+.topbar-step{font-family:var(--mono);font-size:11px;color:#888;min-width:80px}
+.topbar-label{font-family:var(--mono);font-size:11px;color:#888}
+.progress-track{flex:1;height:3px;background:rgba(255,255,255,.08);border-radius:2px;overflow:hidden}
+.progress-bar{height:100%;background:linear-gradient(90deg,var(--cyan),var(--rose),var(--gold));border-radius:2px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+.content{max-width:900px;margin:0 auto;padding:40px 24px 120px;transition:opacity .4s,transform .4s;transition-timing-function:cubic-bezier(.4,0,.2,1)}
+.content.fade-out{opacity:0;transform:translateY(20px)}
+
+.nav{position:fixed;bottom:0;left:0;right:0;backdrop-filter:blur(20px);background:rgba(10,10,15,.85);border-top:1px solid var(--border);padding:16px 24px;display:none;z-index:100}
+.nav.show{display:block}
+.nav-inner{max-width:900px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+
+/* Buttons */
+.btn{border:none;padding:12px 28px;border-radius:50px;font-size:14px;letter-spacing:.02em;transition:all .2s}
+.btn-back{background:rgba(255,255,255,.06);color:#aaa}
+.btn-next{background:linear-gradient(135deg,var(--cyan),var(--rose));color:#000;font-weight:700}
+.btn-primary{background:linear-gradient(135deg,var(--cyan),var(--rose));color:#000;font-weight:700;font-size:16px;padding:16px 40px;box-shadow:0 0 40px rgba(0,229,255,.2),0 0 80px rgba(255,107,157,.1)}
+.btn:hover{transform:translateY(-1px)}
+
+/* Step header */
+.step-head{margin-bottom:36px}
+.step-num{font-family:var(--mono);font-size:12px;color:var(--text4);letter-spacing:.15em;margin-bottom:8px}
+.step-title{font-size:32px;font-weight:700;margin:0 0 8px;color:var(--text)}
+.step-sub{font-size:15px;color:#888;margin:0;line-height:1.5}
+
+/* Inputs */
+.label{font-size:12px;font-weight:500;color:#888;margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em}
+.input{width:100%;padding:12px 16px;border-radius:10px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.04);color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
+.input:focus{border-color:rgba(255,255,255,.2)}
+
+/* Select cards */
+.sel-card{padding:14px 18px;border-radius:12px;cursor:pointer;transition:all .2s;background:var(--surface);border:1px solid var(--border);color:#ccc;display:flex;align-items:center;font-size:14px;gap:10px}
+.sel-card.active{background:rgba(255,213,79,.08);border-color:rgba(255,213,79,.35);color:var(--gold)}
+.sel-card .check{width:18px;height:18px;border-radius:4px;border:1.5px solid rgba(255,255,255,.15);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;color:#000}
+.sel-card.active .check{background:var(--gold);border-color:var(--gold)}
+
+/* SVG Icon containers */
+.icon-box{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.icon-box.cyan{background:rgba(0,229,255,.1)}
+.icon-box.rose{background:rgba(255,107,157,.1)}
+.icon-box.gold{background:rgba(255,213,79,.1)}
+
+/* Track cards */
+.track-card{padding:24px;border-radius:16px;cursor:pointer;transition:all .3s;background:var(--surface);border:1.5px solid var(--border)}
+.track-card:hover{border-color:rgba(255,255,255,.1)}
+.track-card.active{transform:scale(1.01)}
+.track-card .check-circle{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-size:14px;font-weight:700}
+
+/* Module cards */
+.mod-card{padding:16px 20px;border-radius:14px;cursor:pointer;transition:all .3s;background:var(--surface);border:1px solid var(--border)}
+.mod-card:hover{border-color:rgba(255,255,255,.1)}
+.mod-tag{font-size:10px;padding:3px 8px;border-radius:6px;background:rgba(255,255,255,.05);color:#777}
+
+/* Format cards */
+.fmt-card{padding:24px;border-radius:16px;cursor:pointer;transition:all .3s;background:var(--surface);border:1.5px solid var(--border)}
+.fmt-card:hover{border-color:rgba(255,255,255,.1)}
+.fmt-card.active{background:rgba(255,213,79,.06);border-color:rgba(255,213,79,.4)}
+.fmt-badge{font-family:var(--mono);font-size:11px;color:var(--gold);padding:6px 12px;background:rgba(255,213,79,.1);border-radius:8px;display:inline-block;margin-bottom:12px}
+
+/* Summary */
+.sum-section{padding-bottom:20px;margin-bottom:20px;border-bottom:1px solid rgba(255,255,255,.04)}
+.sum-section:last-child{padding-bottom:0;margin-bottom:0;border-bottom:none}
+.sum-label{font-size:11px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px}
+
+/* Trust items */
+.trust-item{padding:6px 12px;border-radius:8px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.04);font-size:11px;color:var(--text4)}
+
+/* Steps visibility */
+.step{display:none}
+.step.active{display:block}
+
+/* Animations */
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.03)}}
+.pulse{animation:pulse 2s infinite}
+@keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.fade-in{animation:fadeIn .6s both}
+</style>
+</head>
+<body>
+
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+
+<div id="app">
+  <!-- Top bar -->
+  <div class="topbar" id="topbar">
+    <div class="topbar-inner">
+      <span class="topbar-step" id="stepCounter">01/07</span>
+      <div class="progress-track"><div class="progress-bar" id="progressBar" style="width:0%"></div></div>
+      <span class="topbar-label" id="stepLabel">Your Hub</span>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content" id="content">
+
+    <!-- STEP 0: Welcome -->
+    <div class="step active" id="step-0">
+      <div style="min-height:85vh;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center" class="fade-in">
+        <div style="font-family:var(--mono);font-size:12px;color:var(--text3);letter-spacing:.3em;text-transform:uppercase;margin-bottom:32px">Training Program Proposal — Seoul 2026</div>
+        <h1 style="font-size:clamp(36px,8vw,72px);font-weight:700;line-height:1.05;margin:0 0 8px;background:linear-gradient(135deg,#e8e4e0 30%,#ff6b9d 60%,#00e5ff 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">IApyme</h1>
+        <div style="font-size:clamp(16px,3vw,24px);color:var(--text3);font-weight:300">&times;</div>
+        <h1 style="font-size:clamp(36px,8vw,72px);font-weight:700;line-height:1.05;margin:0 0 32px;background:linear-gradient(135deg,#ffd54f 20%,#ff6b9d 60%,#e8e4e0 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent">Make Your Way</h1>
+        <p style="font-size:18px;color:var(--text2);max-width:520px;line-height:1.6;margin:0 0 16px">AI acceleration meets structured innovation.<br>A joint training program designed for international startup hubs in Seoul.</p>
+        <div style="display:flex;gap:32px;margin:32px 0 48px;flex-wrap:wrap;justify-content:center" id="heroStats"></div>
+        <button class="btn btn-primary pulse" onclick="goToStep(1)">Build Your Program &rarr;</button>
+        <div style="margin-top:48px;display:flex;gap:24px;font-size:11px;color:var(--text4)">
+          <span>Powered by IApyme Consultores</span><span>&middot;</span><span>Rivia Education Holding</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- STEP 1: Profile -->
+    <div class="step" id="step-1">
+      <div class="step-head"><div class="step-num">STEP 01</div><h2 class="step-title">Tell us about your hub</h2><p class="step-sub">Help us understand your context so we can tailor the best experience.</p></div>
+      <div style="margin-bottom:32px"><div class="label">Hub Name</div><input class="input" id="hubName" placeholder="e.g. Global Startup Center Seoul"></div>
+      <div style="margin-bottom:32px"><div class="label">Hub Type</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px" id="hubTypeGrid"></div></div>
+      <div><div class="label">Current Cohort Size</div><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px" id="cohortGrid"></div></div>
+    </div>
+
+    <!-- STEP 2: Challenges -->
+    <div class="step" id="step-2">
+      <div class="step-head"><div class="step-num">STEP 02</div><h2 class="step-title">What challenges do your startups face?</h2><p class="step-sub">Select all that apply. This helps us prioritise the right modules.</p></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px" id="challengeGrid"></div>
+      <div id="challengeCount" style="margin-top:24px;padding:12px 16px;background:rgba(0,229,255,.06);border-radius:12px;border:1px solid rgba(0,229,255,.15);font-size:13px;color:#aaa;display:none"></div>
+    </div>
+
+    <!-- STEP 3: Track -->
+    <div class="step" id="step-3">
+      <div class="step-head"><div class="step-num">STEP 03</div><h2 class="step-title">Choose your track</h2><p class="step-sub">Each track brings a different superpower to your community.</p></div>
+      <div style="display:flex;flex-direction:column;gap:16px" id="trackGrid"></div>
+    </div>
+
+    <!-- STEP 4: Modules -->
+    <div class="step" id="step-4">
+      <div class="step-head"><div class="step-num">STEP 04</div><h2 class="step-title">Select your modules</h2><p class="step-sub" id="modulesSub">Pick the sessions that matter most for your community.</p></div>
+      <div id="modulesContainer"></div>
+      <div id="moduleCount" style="padding:12px 16px;background:rgba(255,213,79,.06);border-radius:12px;border:1px solid rgba(255,213,79,.15);font-size:13px;color:#ccc;display:none"></div>
+    </div>
+
+    <!-- STEP 5: Format -->
+    <div class="step" id="step-5">
+      <div class="step-head"><div class="step-num">STEP 05</div><h2 class="step-title">Pick your format</h2><p class="step-sub">How would you like the program delivered?</p></div>
+      <div style="display:flex;flex-direction:column;gap:14px" id="formatGrid"></div>
+    </div>
+
+    <!-- STEP 6: Add-ons -->
+    <div class="step" id="step-6">
+      <div class="step-head"><div class="step-num">STEP 06</div><h2 class="step-title">Boost your program</h2><p class="step-sub">Optional add-ons to maximise impact. Select any that interest you.</p></div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px" id="addonGrid"></div>
+    </div>
+
+    <!-- STEP 7: Summary -->
+    <div class="step" id="step-7">
+      <div class="step-head"><div class="step-num">YOUR PROPOSAL</div><h2 class="step-title">Your custom proposal</h2><p class="step-sub">Here's a summary of your selections. Ready to make it happen?</p></div>
+      <div id="summaryContent" style="background:var(--surface);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:28px;margin-bottom:24px"></div>
+      <div style="background:var(--surface);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:28px">
+        <div style="font-size:13px;font-family:var(--mono);color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px">Send your proposal</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px">
+          <div><div class="label">Your Name</div><input class="input" id="contactName" placeholder="Name"></div>
+          <div><div class="label">Your Email</div><input class="input" id="contactEmail" placeholder="email@hub.com"></div>
+        </div>
+        <button class="btn" onclick="sendProposal()" style="width:100%;padding:16px 32px;font-size:16px;background:linear-gradient(135deg,var(--cyan),var(--rose));color:#000;font-weight:700;box-shadow:0 0 40px rgba(0,229,255,.2),0 0 80px rgba(255,107,157,.1);border-radius:50px">Send Proposal Request via Email &rarr;</button>
+        <div style="text-align:center;margin-top:12px;font-size:12px;color:var(--text3)">
+          This will open your email client with a pre-filled message to<br>
+          <span style="color:#aaa">iapymeconsultores&#64;gmail.com</span> &amp; <span style="color:#aaa">info&#64;makeyourway.es</span>
+        </div>
+      </div>
+
+      <!-- Trust -->
+      <div style="margin-top:40px;text-align:center;padding:32px 0;border-top:1px solid rgba(255,255,255,.04)">
+        <div style="font-size:12px;color:var(--text4);font-family:var(--mono);text-transform:uppercase;letter-spacing:.15em;margin-bottom:20px">Trusted by organisations across 5 countries</div>
+        <div style="display:flex;justify-content:center;gap:10px;flex-wrap:wrap" id="trustGrid"></div>
+        <div style="margin-top:24px;font-size:11px;color:#444">IApyme Consultores &times; Make Your Way — Seoul 2026</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- Bottom nav -->
+  <div class="nav" id="nav">
+    <div class="nav-inner">
+      <button class="btn btn-back" onclick="prevStep()">&larr; Back</button>
+      <button class="btn btn-next" id="nextBtn" onclick="nextStep()">Continue &rarr;</button>
+    </div>
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const STEPS = ["Welcome","Your Hub","Challenges","Track","Modules","Format","Add-ons","Your Proposal"];
+
+const TRACKS = [
+  {id:"ai",name:"AI Acceleration",by:"IApyme Consultores",color:"#00e5ff",
+   icon:"\u26A1",
+   desc:"Equip your startups with cutting-edge AI tools and workflows. From vibe coding to AI-assisted operations, turn ideas into MVPs at unprecedented speed."},
+  {id:"innovation",name:"Innovation & Design",by:"Make Your Way",color:"#ff6b9d",
+   icon:"\uD83D\uDCA1",
+   desc:"Structured Design Thinking methodology to validate ideas, build prototypes, and develop innovation mindsets. Tested across 5 countries and 15+ institutions."},
+  {id:"combined",name:"Full Stack Innovation",by:"IApyme \u00d7 Make Your Way",color:"#ffd54f",
+   icon:"\uD83D\uDE80",
+   desc:"The ultimate package. Combine AI acceleration with structured innovation methodology for a comprehensive startup transformation experience.",recommended:true}
+];
+
+const AI_MODULES = [
+  {id:"ai1",name:"AI Onboarding for Startups",duration:"2–3h",tags:["ChatGPT","Perplexity","Notion AI"],desc:"From zero to operational. Current AI landscape, relevant tools, live workflow build."},
+  {id:"ai2",name:"Vibe Coding: Ship Faster with AI",duration:"3h",tags:["Cursor","v0","Replit"],desc:"AI-assisted development. Go from idea to MVP in hours. No senior dev required."},
+  {id:"ai3",name:"Process Agility + AI Ops",duration:"2.5h",tags:["Make/Zapier","Notion","Lean ops"],desc:"Lean AI-augmented operations. Process mapping, automation, workflows that scale."},
+  {id:"ai4",name:"AI Content & GTM for Startups",duration:"2h",tags:["Content","Landing pages","GTM"],desc:"AI content engine, faster launches, automated go-to-market strategies."}
+];
+
+const DT_MODULES = [
+  {id:"dt1",name:"Problem Discovery & User Research",duration:"2h",tags:["Design Thinking","Buyer Persona","Context"],desc:"Identify real challenges, define users, analyse context and needs."},
+  {id:"dt2",name:"Structured Ideation",duration:"2h",tags:["Brainstorming","COCD Box","Prioritisation"],desc:"Generate solutions using structured frameworks. Impact vs. effort analysis."},
+  {id:"dt3",name:"Rapid Prototyping & Validation",duration:"2h",tags:["Prototyping","Fake door","Landing"],desc:"Build quick prototypes and validate with real methods — surveys, landing pages, fake doors."},
+  {id:"dt4",name:"Pitch Preparation & Storytelling",duration:"2h",tags:["Pitch","Storytelling","Feedback"],desc:"Structure compelling pitches. Mini presentations with expert feedback."}
+];
+
+const FORMATS = [
+  {id:"intensive",name:"Intensive Sprint",duration:"3 days",hours:"6h total",icon:"\uD83D\uDD25",desc:"Fast, focused, high-impact. Perfect for time-constrained hubs."},
+  {id:"standard",name:"Standard Program",duration:"6 sessions",hours:"12h total",icon:"\uD83D\uDCD0",desc:"Balanced depth and pacing. Ideal for ongoing engagement.",recommended:true},
+  {id:"premium",name:"Premium Deep-Dive",duration:"3 weeks",hours:"12h+ with mentoring",icon:"\uD83D\uDC8E",desc:"Full transformation. Weekly sessions plus optional mentoring close."}
+];
+
+const ADDONS = [
+  {id:"mentoring",name:"1:1 Founder Mentoring",price:"Per session",icon:"\uD83C\uDFAF",desc:"Focused 1-hour consultation on specific AI adoption or innovation challenges."},
+  {id:"audit",name:"Express AI Audit",price:"2h session",icon:"\uD83D\uDD0D",desc:"Diagnose operations, identify highest-leverage AI opportunities, deliver implementation roadmap."},
+  {id:"hackathon",name:"Innovation Hackathon",price:"Full day",icon:"\u26A1",desc:"Partner or beneficiary hackathon using Double Diamond methodology with AI tools integration."},
+  {id:"custom",name:"Custom Module",price:"Flexible",icon:"\uD83D\uDEE0\uFE0F",desc:"Have a specific challenge? We co-design a tailored session around your community's needs."}
+];
+
+const CHALLENGES = [
+  {id:"c1",label:"Startups struggle to validate ideas quickly",icon:"\uD83C\uDFAF"},
+  {id:"c2",label:"Founders don't know how to leverage AI tools",icon:"\uD83E\uDD16"},
+  {id:"c3",label:"Teams lack structured innovation methodology",icon:"\uD83D\uDCA1"},
+  {id:"c4",label:"MVPs take too long to build",icon:"\u23F3"},
+  {id:"c5",label:"Go-to-market strategies need acceleration",icon:"\uD83D\uDE80"},
+  {id:"c6",label:"Hub needs to differentiate its program offering",icon:"\u2B50"}
+];
+
+const TRUST_ORGS = [
+  "Mondragon University","MTA","Rivia Education","Politeknika Txorierri","Askartza Claret",
+  "Lea Artibai","Pune Institute","Dock 72 Brooklyn","Kirloskar Institute","Atelier Gardens Berlin",
+  "Notepierdasenlasredes","Hotel Meliá","Cuadrabus","Artomaña Txakolina","Gráficas Amurrio",
+  "Amurrioko Enpresak","Jesuitinas Bilbao","IES Botikazar","Batera","AIAIMS"
+];
+
+const HERO_STATS = [{n:"100+",l:"Companies Trained"},{n:"5",l:"Countries"},{n:"+15",l:"Institutions"},{n:"300+",l:"Participants"},{n:"100%",l:"Satisfaction"}];
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let currentStep = 0;
+let state = {hubName:"",hubType:"",cohortSize:"",challenges:[],track:"",modules:[],format:"",addons:[],contactName:"",contactEmail:""};
+
+// ═══════════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════════
+function goToStep(n){
+  const content = document.getElementById('content');
+  content.classList.add('fade-out');
+  setTimeout(()=>{
+    document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+    document.getElementById('step-'+n).classList.add('active');
+    currentStep = n;
+    updateUI();
+    content.classList.remove('fade-out');
+    window.scrollTo({top:0,behavior:'smooth'});
+  },300);
+}
+function nextStep(){if(currentStep<7)goToStep(currentStep+1)}
+function prevStep(){if(currentStep>0)goToStep(currentStep-1)}
+
+function updateUI(){
+  const tb=document.getElementById('topbar');
+  const nv=document.getElementById('nav');
+  const nb=document.getElementById('nextBtn');
+  tb.classList.toggle('show',currentStep>0);
+  nv.classList.toggle('show',currentStep>0);
+  if(nb)nb.style.display=currentStep<7?'block':'none';
+  if(currentStep>0){
+    document.getElementById('stepCounter').textContent=String(currentStep).padStart(2,'0')+'/07';
+    document.getElementById('progressBar').style.width=Math.round(currentStep/7*100)+'%';
+    document.getElementById('stepLabel').textContent=STEPS[currentStep];
+  }
+  if(currentStep===4)renderModules();
+  if(currentStep===7)renderSummary();
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+function init(){
+  // Hero stats
+  const hs=document.getElementById('heroStats');
+  HERO_STATS.forEach(s=>{
+    hs.innerHTML+=`<div style="text-align:center"><div style="font-size:28px;font-weight:700;font-family:var(--mono);background:linear-gradient(135deg,#00e5ff,#ff6b9d);-webkit-background-clip:text;-webkit-text-fill-color:transparent">${s.n}</div><div style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-top:4px">${s.l}</div></div>`;
+  });
+
+  // Hub types
+  const htg=document.getElementById('hubTypeGrid');
+  ["Startup Accelerator","Innovation Hub","University Incubator","Government Program","Co-working Space","Other"].forEach(h=>{
+    htg.innerHTML+=`<div class="sel-card" onclick="selectSingle(this,'hubType','${h}')">${h}</div>`;
+  });
+
+  // Cohort sizes
+  const cg=document.getElementById('cohortGrid');
+  ["5–10 startups","10–20 startups","20–40 startups","40+ startups"].forEach(s=>{
+    cg.innerHTML+=`<div class="sel-card" onclick="selectSingle(this,'cohortSize','${s}')">${s}</div>`;
+  });
+
+  // Challenges
+  const chg=document.getElementById('challengeGrid');
+  CHALLENGES.forEach(c=>{
+    chg.innerHTML+=`<div class="sel-card" data-id="${c.id}" onclick="toggleMulti(this,'challenges','${c.id}')"><span class="check"></span><span style="display:flex;align-items:center;gap:8px">${c.svg} ${c.label}</span></div>`;
+  });
+
+  // Tracks
+  const tg=document.getElementById('trackGrid');
+  TRACKS.forEach(t=>{
+    tg.innerHTML+=`<div class="track-card" data-id="${t.id}" onclick="selectTrack('${t.id}',this)">
+      <div style="display:flex;align-items:center;gap:16px;margin-bottom:8px">
+        <span style="font-size:32px">${t.icon}</span>
+        <div style="flex:1"><div style="font-size:20px;font-weight:700">${t.name}</div><div style="font-size:12px;color:#777;font-family:var(--mono)">${t.by}</div></div>
+        <div class="check-circle" style="display:none;background:${t.color}">✓</div>
+      </div>
+      <p style="font-size:14px;color:var(--text2);line-height:1.6;margin:0">${t.desc}</p>
+      ${t.recommended?'<div style="margin-top:12px;padding:6px 12px;background:rgba(255,213,79,.1);border-radius:8px;font-size:11px;color:var(--gold);display:inline-block">Recommended — Maximum impact for your community</div>':''}
+    </div>`;
+  });
+
+  // Formats
+  const fg=document.getElementById('formatGrid');
+  FORMATS.forEach(f=>{
+    fg.innerHTML+=`<div class="fmt-card" data-id="${f.id}" onclick="selectFormat('${f.id}',this)">
+      ${f.recommended?'<div class="fmt-badge">Recommended</div>':''}
+      <div style="display:flex;align-items:center;gap:16px">
+        <span style="font-size:32px">${f.icon}</span>
+        <div style="flex:1"><div style="font-weight:700;font-size:18px">${f.name}</div><div style="font-size:12px;color:#777;font-family:var(--mono);margin-top:2px">${f.duration} · ${f.hours}</div></div>
+      </div>
+      <p style="font-size:14px;color:#888;margin:10px 0 0 56px;line-height:1.5">${f.desc}</p>
+    </div>`;
+  });
+
+  // Addons
+  const ag=document.getElementById('addonGrid');
+  ADDONS.forEach(a=>{
+    ag.innerHTML+=`<div class="sel-card" data-id="${a.id}" onclick="toggleMulti(this,'addons','${a.id}')" style="flex-direction:column;align-items:flex-start;padding:20px;gap:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%"><div class="icon-box" style="background:rgba(255,255,255,.04)">${a.svg}</div><span class="check" style="display:none"></span></div>
+      <div style="font-weight:600;font-size:15px">${a.name}</div>
+      <div style="font-size:11px;color:#777;font-family:var(--mono)">${a.price}</div>
+      <p style="font-size:13px;color:#888;margin:0;line-height:1.5">${a.desc}</p>
+    </div>`;
+  });
+
+  // Trust
+  const tgr=document.getElementById('trustGrid');
+  TRUST_ORGS.forEach(n=>{tgr.innerHTML+=`<span class="trust-item">${n}</span>`});
+}
+
+// ═══════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════
+function selectSingle(el,key,val){
+  state[key]=val;
+  el.parentElement.querySelectorAll('.sel-card').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+}
+
+function toggleMulti(el,key,val){
+  const idx=state[key].indexOf(val);
+  if(idx>-1)state[key].splice(idx,1);else state[key].push(val);
+  el.classList.toggle('active');
+  const ck=el.querySelector('.check');
+  if(ck)ck.textContent=el.classList.contains('active')?'✓':'';
+  if(key==='challenges'){
+    const cc=document.getElementById('challengeCount');
+    if(state.challenges.length>0){cc.style.display='block';cc.textContent='✓ '+state.challenges.length+' challenge'+(state.challenges.length>1?'s':'')+' identified — we\'ll match these to the best modules.';}else{cc.style.display='none';}
+  }
+}
+
+function selectTrack(id,el){
+  state.track=id;state.modules=[];
+  document.querySelectorAll('.track-card').forEach(c=>{
+    c.classList.remove('active');c.style.borderColor='';c.style.background='';
+    c.querySelector('.check-circle').style.display='none';
+  });
+  const t=TRACKS.find(t=>t.id===id);
+  el.classList.add('active');
+  el.style.borderColor=t.color+'60';
+  el.style.background='linear-gradient(135deg,'+t.color+'15,'+t.color+'08)';
+  el.querySelector('.check-circle').style.display='flex';
+}
+
+function selectFormat(id,el){
+  state.format=id;
+  document.querySelectorAll('.fmt-card').forEach(c=>{c.classList.remove('active')});
+  el.classList.add('active');
+}
+
+function toggleModule(id){
+  const idx=state.modules.indexOf(id);
+  if(idx>-1)state.modules.splice(idx,1);else state.modules.push(id);
+  renderModules();
+}
+
+// ═══════════════════════════════════════════════
+// RENDER MODULES
+// ═══════════════════════════════════════════════
+function renderModules(){
+  const c=document.getElementById('modulesContainer');
+  const track=TRACKS.find(t=>t.id===state.track);
+  document.getElementById('modulesSub').textContent='Pick the sessions that matter most. Track: '+(track?track.name:'Not selected');
+
+  const aiMods=state.track==='innovation'?[]:AI_MODULES;
+  const dtMods=state.track==='ai'?[]:DT_MODULES;
+  let html='';
+
+  const renderGroup=(title,color,mods)=>{
+    html+=`<div style="margin-bottom:32px"><div style="font-size:13px;font-family:var(--mono);color:${color};margin-bottom:12px;text-transform:uppercase;letter-spacing:.1em">${title}</div><div style="display:flex;flex-direction:column;gap:10px">`;
+    mods.forEach(m=>{
+      const sel=state.modules.includes(m.id);
+      html+=`<div class="mod-card" onclick="toggleModule('${m.id}')" style="${sel?'background:linear-gradient(135deg,'+color+'12,'+color+'06);border-color:'+color+'50':''}">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <span style="font-weight:600;font-size:15px;color:${sel?'#e8e4e0':'#ccc'}">${m.name}</span>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:12px;color:#777;font-family:var(--mono)">${m.duration}</span>
+            ${sel?`<span style="width:22px;height:22px;border-radius:50%;background:${color};display:inline-flex;align-items:center;justify-content:center;color:#000;font-size:12px;font-weight:700">✓</span>`:''}
+          </div>
+        </div>
+        <p style="font-size:13px;color:#888;margin:0 0 8px;line-height:1.5">${m.desc}</p>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${m.tags.map(t=>`<span class="mod-tag">${t}</span>`).join('')}</div>
+      </div>`;
+    });
+    html+='</div></div>';
+  };
+
+  if(aiMods.length)renderGroup('AI Acceleration — by IApyme','#00e5ff',aiMods);
+  if(dtMods.length)renderGroup('Innovation & Design — by Make Your Way','#ff6b9d',dtMods);
+  c.innerHTML=html;
+
+  const mc=document.getElementById('moduleCount');
+  if(state.modules.length>0){mc.style.display='block';mc.innerHTML='<strong style="color:var(--gold)">'+state.modules.length+' module'+(state.modules.length>1?'s':'')+' </strong> selected';}else{mc.style.display='none';}
+}
+
+// ═══════════════════════════════════════════════
+// RENDER SUMMARY
+// ═══════════════════════════════════════════════
+function renderSummary(){
+  state.hubName=document.getElementById('hubName').value;
+  const track=TRACKS.find(t=>t.id===state.track);
+  const format=FORMATS.find(f=>f.id===state.format);
+  const allMods=[...AI_MODULES,...DT_MODULES];
+  const selMods=state.modules.map(id=>allMods.find(m=>m.id===id)).filter(Boolean);
+  const selAddons=state.addons.map(id=>ADDONS.find(a=>a.id===id)).filter(Boolean);
+  const selChallenges=state.challenges.map(id=>CHALLENGES.find(c=>c.id===id)).filter(Boolean);
+
+  let html='';
+  // Hub
+  html+=`<div class="sum-section"><div class="sum-label">Your Hub</div><div style="font-size:18px;font-weight:600">${state.hubName||'—'}</div><div style="font-size:13px;color:#888">${state.hubType||''} · ${state.cohortSize||''}</div></div>`;
+  // Challenges
+  if(selChallenges.length){
+    html+=`<div class="sum-section"><div class="sum-label">Key Challenges</div><div style="display:flex;gap:8px;flex-wrap:wrap">${selChallenges.map(c=>`<span style="font-size:12px;padding:5px 12px;border-radius:8px;background:rgba(255,107,157,.08);border:1px solid rgba(255,107,157,.15);color:#ddd">${c.label}</span>`).join('')}</div></div>`;
+  }
+  // Track
+  if(track){
+    html+=`<div class="sum-section"><div class="sum-label">Selected Track</div><div style="display:flex;align-items:center;gap:12px">${track.svg}<div><div style="font-size:16px;font-weight:700;color:${track.color}">${track.name}</div><div style="font-size:12px;color:#777">${track.by}</div></div></div></div>`;
+  }
+  // Modules
+  if(selMods.length){
+    html+=`<div class="sum-section"><div class="sum-label">Modules (${selMods.length})</div>${selMods.map(m=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)"><span style="font-size:14px">${m.name}</span><span style="font-size:12px;color:#777;font-family:var(--mono)">${m.duration}</span></div>`).join('')}</div>`;
+  }
+  // Format
+  if(format){
+    html+=`<div class="sum-section"><div class="sum-label">Format</div><div style="display:flex;align-items:center;gap:12px">${format.svg}<div><div style="font-weight:600">${format.name}</div><div style="font-size:12px;color:#777">${format.duration} · ${format.hours}</div></div></div></div>`;
+  }
+  // Addons
+  if(selAddons.length){
+    html+=`<div class="sum-section" style="border-bottom:none;margin-bottom:0;padding-bottom:0"><div class="sum-label">Add-ons</div><div style="display:flex;gap:8px;flex-wrap:wrap">${selAddons.map(a=>`<span style="font-size:12px;padding:5px 12px;border-radius:8px;background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.15);color:#ddd">${a.name}</span>`).join('')}</div></div>`;
+  }
+  document.getElementById('summaryContent').innerHTML=html;
+}
+
+function sendProposal(){
+  var name=document.getElementById('contactName').value;
+  var email=document.getElementById('contactEmail').value;
+  var track=TRACKS.find(function(t){return t.id===state.track});
+  var format=FORMATS.find(function(f){return f.id===state.format});
+  var allMods=AI_MODULES.concat(DT_MODULES);
+  var lines=['PROPOSAL REQUEST - IApyme x Make Your Way','',
+    'Hub: '+(state.hubName||'Not specified'),
+    'Type: '+(state.hubType||'Not specified'),
+    'Cohort Size: '+(state.cohortSize||'Not specified'),'','CHALLENGES:'];
+  state.challenges.forEach(function(id){var c=CHALLENGES.find(function(x){return x.id===id});if(c)lines.push('  - '+c.label)});
+  lines.push('','TRACK: '+(track?track.name+' ('+track.by+')':'Not selected'),'','SELECTED MODULES:');
+  state.modules.forEach(function(id){var m=allMods.find(function(x){return x.id===id});if(m)lines.push('  - '+m.name+' ('+m.duration+')')});
+  lines.push('','FORMAT: '+(format?format.name:'Not selected'),'','ADD-ONS:');
+  if(state.addons.length>0){state.addons.forEach(function(id){var a=ADDONS.find(function(x){return x.id===id});if(a)lines.push('  - '+a.name)})}else{lines.push('  None selected')}
+  lines.push('','Contact: '+(name||'Not provided')+' - '+(email||'Not provided'),'','Looking forward to discussing this proposal.');
+  var recipient='iapymeconsultores'+'@'+'gmail.com';
+  var ccAddr='info'+'@'+'makeyourway.es';
+  var subj=encodeURIComponent('Program Proposal Request - '+(state.hubName||'Startup Hub'));
+  var bod=encodeURIComponent(lines.join('\n'));
+  window.location.href='mai'+'lto:'+recipient+'?cc='+ccAddr+'&subject='+subj+'&body='+bod;}
+
+// Listen for input changes
+document.addEventListener('input',function(e){
+  if(e.target.id==='hubName')state.hubName=e.target.value;
+});
+
+// Init on load
+document.addEventListener('DOMContentLoaded',init);
+</script>
+
+</body>
+</html>
